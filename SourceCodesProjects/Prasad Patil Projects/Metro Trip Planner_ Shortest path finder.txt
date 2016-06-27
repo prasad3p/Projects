@@ -1,0 +1,673 @@
+/*##############################Algorithm#########################################################################################################
+Metro trip planner:::
+
+Given an inout file that contains information about the metro rail system of Washington DC metro area. The
+program will help customer to find quickest trip from one station to another.
+##################################################################################################################################################
+In the program as the file metro.txt is read, each station is stores as a structure.
+We also use 6 different arrays representing 6 lines of the metro system. The station structures
+are stored in these respective arrays as they are read from the text file.
+After reading we ask user to enter source and destination through the keyboard.
+Entered source is first searched linearly through these arrays of stations one by one in a fixed sequence.
+The line(array) and the index at which the station is found is stored seperately.
+Now the destination is searched first through the array(line) in which source is found if destination also
+lies in the same array i.e same line then user need not switch any lines. And depending on indices of source and destination,
+we find out number of station passenger would have to travel. Total time is calculated by traversing through the array in which
+source and destinations were found and adding stappage time at each station from source to destination.
+If destination is not found on source array(line) then we search through remaining arrays.
+In the map we observe that each line intersects every other line. So once we find out array(line) on which destination recides,
+by linearly searhcing in a fixed sequence, we now find out the intersection point of these two arrys or lines.
+To find intersection, we traverse through source array one by one station and see if any of the station structure has crossover
+line mentioned as destination line. If we find such station we store the index of the intersection station seperately.
+Now we find out time it takes to travel from source to intersection by traversing the source array one by one station and adding stoppage time
+at each station lets call this time as t1. Now we find out time it takes to travel from destination to intersection. We
+traverse through the destination line one by one station and check if station name matches the intersection station. After we find a match,
+We calculate time it takes to reach the intersection by adding their stoppage times at each station while traversing.
+Lets call this time as t2. We add these two times t1 and t2. Lets call this time as T. We then find out next intesection between source and
+destination lines just as we did first time in a loop. We compare this time with the one calculated earlier i.e. T. If it is smaller we store
+all the details such as source station name, source line, destination name, destination line, total time, number of stations to cross and replace
+these variables if T calculated is smaller in every iteration of the loop. At the end of the loop, i.e when we are done with all the intersections
+we will have stored all the details to be printed into the file which are in regards with shorted time possible between two lines.
+we print the reseult into the file when we scan through all the intersection between two lines.
+The algorithm may not find the shortest path out of all the possible paths available from one point to the other
+but it will find a quickest path from one point to the other for fixed two lines.
+##################################################################################################################################################*/
+
+#include<stdio.h>
+#include<string.h>
+#include<stdlib.h>
+
+//Define station structure.
+typedef struct station
+{
+        char stationName[500];
+        char n[500];
+        char tt[500];
+        char st[500];
+        char line1[500];
+        char ttLine1[500];
+        char line2[500];
+        char ttLine2[500];
+        char line3[500];
+        char ttLine3[500];
+        char line4[500];
+        char ttLine4[500];
+}station;
+
+//Function to print stations in each line.
+void printLine(station line[],int l)
+{
+        int i=0;
+        for(i=0;i<l;i++)
+        {
+                printf("\nStation %d\n",i+1);
+                printf("%s %s %s %s",line[i].stationName,line[i].n,line[i].tt,line[i].st);
+                printf(" %s %s %s %s",line[i].line1,line[i].ttLine1,line[i].line2,line[i].ttLine2);
+                printf(" %s %s %s %s",line[i].line3,line[i].ttLine3,line[i].line4,line[i].ttLine4);
+        }
+}
+
+//Function to create lines out of given text file data.
+void createLine(station arr[],FILE *f,int l)
+{
+        int count=0,i=0,g=0,k=0;
+        char c=NULL;
+        while(count!=l)
+        {
+                char s[500]={0};
+                while(1)
+                {
+                        c=fgetc(f);
+                        if(c==' '||c=='\n')
+                        {
+                                break;
+                        }
+                        s[k]=c;
+                        k++;
+                }
+                k=0;
+                if(g==0)
+                        strcpy(arr[i].stationName,s);
+                else if(g==1)
+                        strcpy(arr[i].n,s);
+                else if(g==2)
+                        strcpy(arr[i].tt,s);
+                else if(g==3)
+                        strcpy(arr[i].st,s);
+                else if(g==4)
+                        strcpy(arr[i].line1,s);
+                else if(g==5)
+                        strcpy(arr[i].ttLine1,s);
+                else if(g==6)
+                        strcpy(arr[i].line2,s);
+                else if(g==7)
+                        strcpy(arr[i].ttLine2,s);
+                else if(g==8)
+                        strcpy(arr[i].line3,s);
+                else if(g==9)
+                        strcpy(arr[i].ttLine3,s);
+                else if(g==10)
+                        strcpy(arr[i].line4,s);
+                else
+                        strcpy(arr[i].ttLine4,s);
+
+                g++;
+                if(c=='\n')
+                {
+                        count++;
+                        i++;
+                        g=0;
+                }
+        }
+}
+
+//Funtion to skip lines from text files if it encounters an empty line.
+void leaveLines(FILE *f)
+{
+        char c=NULL;
+        while(c!='\n')
+        {
+                c=fgetc(f);
+        }
+}
+
+//Function to search a station in a line.
+station searchSrc(char src[],station green[],station yellow[],station blue[],station silver[],station orange[],station red[],int *p,int *si)
+{
+        int d=0;
+        for(d=0;d<21;d++)
+        {
+                if(strcmp(src,green[d].stationName)==0)
+                {
+                        *p=1;
+                        *si=d;
+                        return green[d];
+                }
+        }
+        d=0;
+        for(d=0;d<17;d++)
+        {
+                if(strcmp(src,yellow[d].stationName)==0)
+                {
+                        *p=2;
+                        *si=d;
+                        return yellow[d];
+                }
+        }
+        d=0;
+        for(d=0;d<27;d++)
+        {
+                if(strcmp(src,blue[d].stationName)==0)
+                {
+                        *p=3;
+                        *si=d;
+                        return blue[d];
+                }
+        }
+        d=0;
+        for(d=0;d<28;d++)
+        {
+                if(strcmp(src,silver[d].stationName)==0)
+                {
+                        *p=4;
+                        *si=d;
+                        return silver[d];
+                }
+        }
+        d=0;
+        for(d=0;d<26;d++)
+        {
+                if(strcmp(src,orange[d].stationName)==0)
+                {
+                        *p=5;
+                        *si=d;
+                        return orange[d];
+                }
+        }
+        d=0;
+        for(d=0;d<27;d++)
+        {
+                if(strcmp(src,red[d].stationName)==0)
+                {
+                        *p=6;
+                        *si=d;
+                        return red[d];
+                }
+        }
+}
+
+//Funtion to search destination station to check if it falls on the same line as source.
+station searchDst(char dst[],station arr[],int *q,int l,int *di)
+{
+        int i=0;
+        station x;
+        for(i=0;i<l;i++)
+        {
+                if(strcmp(dst,arr[i].stationName)==0)
+                {
+                        *q=1;
+                        *di=i;
+                        return arr[i];
+                }
+        }
+        return x;
+}
+
+//Funtion to calculate time taken to travel between source and the intersection.
+int getTime(int di,int si,station arr1[],int l)
+{
+        int j=0;
+        int t=0;
+        if(si<di)
+        {
+                for(j=si+1;j<di;j++)
+                        t+=atoi(arr1[j].st);
+
+                int k=0;
+                k=(atoi(arr1[di].tt))-(atoi(arr1[si].tt));
+                t+=k;
+        }
+        else
+        {
+                for(j=di+1;j<si;j++)
+                        t+=atoi(arr1[j].st);
+
+                int k=0;
+                k=(atoi(arr1[si].tt))-(atoi(arr1[di].tt));
+                t+=k;
+
+        }
+        return t;
+}
+
+//Funtion to write the contents into file if source and destination fall on the same line.
+void writeToFile(char src[],char linen[],char tow[],int stcount,int min,int sec,char dst[],char filename[])
+{
+
+        FILE *fp;
+        fp=fopen(filename,"w");
+        fprintf(fp,"%s","start from ");
+        fprintf(fp,"%s",src);
+        fprintf(fp,"%s"," station\n");
+        fprintf(fp,"%s","take ");
+        fprintf(fp,"%s",linen);
+        fprintf(fp,"%s"," towards ");
+        fprintf(fp,"%s",tow);
+        fprintf(fp,"%s"," for ");
+        fprintf(fp,"%d",stcount);
+        fprintf(fp,"%s"," stations to ");
+        fprintf(fp,"%s",dst);
+        fprintf(fp,"%s","\narrive ");
+        fprintf(fp,"%s",dst);
+        fprintf(fp,"%s"," in ");
+        fprintf(fp,"%d",min);
+        fprintf(fp,"%s"," minutes and ");
+        fprintf(fp,"%d",sec);
+        fprintf(fp,"%s"," seconds.");
+        fclose(fp);
+        exit(0);
+
+}
+
+//Function to check the intersetion between source and destination lines and find the one which requires shortest time to travel.
+//Funtion also prints the results into text file.
+void findIntersection(station green[],station yellow[],station blue[],station silver[],station orange[],station red[],int dstLine,station s[],int m,int si,int di,char g[],char src[],char dst[],char sline[])
+{
+        int i=0,n=0,l=0,sii=0,sti=0,dii=0,dti=0,t1=0,ft1=0,ft2=0;
+        long totalTime=99999999;
+        station is,id,fis;
+        char tow1[500],tow2[500],ftow1[500],ftow2[500];
+        if(dstLine==1)
+        {
+                l=5;
+                n=21;
+        }
+        else if(dstLine==2)
+        {
+                l=6;
+                n=17;
+        }
+        else if(dstLine==3)
+        {
+                l=4;
+                n=27;
+        }
+        else if(dstLine==4)
+        {
+                l=6;
+                n=28;
+        }
+        else if(dstLine==5)
+        {
+                l=6;
+                n=26;
+        }
+        else
+        {
+                l=3;
+                n=27;
+        }
+
+        station d[n];
+        char ds[l];
+        if(dstLine==1)
+        {
+                for(i=0;i<21;i++)
+                        d[i]=green[i];
+                strcpy(ds,"green");
+        }
+        else if(dstLine==2)
+        {
+                for(i=0;i<17;i++)
+                        d[i]=yellow[i];
+                strcpy(ds,"yellow");
+        }
+        else if(dstLine==3)
+        {
+                for(i=0;i<27;i++)
+                        d[i]=blue[i];
+                strcpy(ds,"blue");
+        }
+        else if(dstLine==4)
+        {
+                for(i=0;i<28;i++)
+                        d[i]=silver[i];
+                strcpy(ds,"silver");
+        }
+        else if(dstLine==5)
+        {
+                for(i=0;i<26;i++)
+                        d[i]=orange[i];
+                strcpy(ds,"orange");
+        }
+        else
+        {
+                 for(i=0;i<27;i++)
+                        d[i]=red[i];
+                strcpy(ds,"red");
+        }
+        int k=0,t=0,j=0,p=0;;
+        i=0;
+        for(i=0;i<m;i++)
+        {
+                if((strcmp(s[i].line1,ds)==0) ||(strcmp(s[i].line2,ds)==0)||(strcmp(s[i].line3,ds)==0)||(strcmp(s[i].line4,ds)==0))
+                {
+                        sii=i;
+                        is=s[i];
+                        k=0;
+                        t=0;
+                        j=0;
+                        if(si<=sii)
+                        {
+                                sti=sii-si;
+                                for(j=si+1;j<sii;j++)
+                                     t+=atoi(s[j].st);
+
+                                strcpy(tow1,s[m-1].stationName);
+                                k=(atoi(s[sii].tt))-(atoi(s[si].tt));
+                                t+=k;
+                        }
+                        else
+                        {
+                                sti=si-sii;
+                                for(j=sii+1;j<si;j++)
+                                      t+=atoi(s[j].st);
+
+                                strcpy(tow1,s[0].stationName);
+                                k=(atoi(s[si].tt))-(atoi(s[sii].tt));
+                                t+=k;
+                        }
+                        p=0;
+                        t1=0;
+                        k=0;
+                        j=0;
+                        for(p=0;p<n;p++)
+                        {
+                                if((strcmp(d[p].stationName,is.stationName)==0))
+                                {
+                                        dii=p;
+                                        id=d[p];
+                                        j=0;
+                                        if(di<=dii)
+                                        {
+                                                dti=dii-di;
+                                                for(j=di+1;j<dii;j++)
+                                                         t1+=atoi(d[j].st);
+
+                                                strcpy(tow2,d[0].stationName);
+                                                k=(atoi(d[dii].tt))-(atoi(d[di].tt));
+                                                t1+=k;
+                                        }
+                                        else
+                                        {
+                                                dti=di-dii;
+                                                for(j=dii+1;j<di;j++)
+                                                         t1+=atoi(d[j].st);
+
+                                                strcpy(tow2,d[n-1].stationName);
+                                                k=(atoi(d[di].tt))-(atoi(d[dii].tt));
+                                                t1+=k;
+                                        }
+                                        t=t+t1;
+                                        break;
+                                }
+                        }
+                        if(t<totalTime)
+                        {
+                                fis=s[i];
+                                ft1=sti;
+                                ft2=dti;
+                                strcpy(ftow1,tow1);
+                                strcpy(ftow2,tow2);
+                                totalTime=t;
+                        }
+                }
+
+
+        }
+        int sec=0,min=0;
+        min=totalTime/60;
+        sec=totalTime%60;
+        FILE *fp;
+        fp=fopen(g,"w");
+        fprintf(fp,"%s","start from ");
+        fprintf(fp,"%s",src);
+        fprintf(fp,"%s"," station\n");
+        fprintf(fp,"%s","take ");
+        fprintf(fp,"%s",sline);
+        fprintf(fp,"%s"," towards ");
+        fprintf(fp,"%s",ftow1);
+        fprintf(fp,"%s"," for ");
+        fprintf(fp,"%d",sti);
+        fprintf(fp,"%s"," stations to ");
+        fprintf(fp,"%s",fis.stationName);
+        fprintf(fp,"%s","\ntransfer to ");
+        fprintf(fp,"%s",ds);
+        fprintf(fp,"%s"," line ");
+        fprintf(fp,"%s","\ntake ");
+        fprintf(fp,"%s",ds);
+        fprintf(fp,"%s"," line towards ");
+        fprintf(fp,"%s",ftow2);
+        fprintf(fp,"%s"," for ");
+        fprintf(fp,"%d",dti);
+        fprintf(fp,"%s"," stations to ");
+        fprintf(fp,"%s",dst);
+        fprintf(fp,"%s","\narrive ");
+        fprintf(fp,"%s",dst);
+        fprintf(fp,"%s"," in ");
+        fprintf(fp,"%d",min);
+        fprintf(fp,"%s"," minutes and ");
+        fprintf(fp,"%d",sec);
+        fprintf(fp,"%s"," seconds.");
+        fclose(fp);
+        exit(0);
+}
+
+//Main program.
+main(int argc,char *argv[])
+{
+        station green[21]={0},yellow[17]={0},blue[27]={0},silver[28]={0},orange[26]={0},red[27]={0};
+        station sst,dstn;
+        FILE *f;
+        char src[100]={0},dst[100]={0};
+        int flag=0,stcount=0,dstLine=0;
+        int srcLine,si=0,di=0,totTime=0,min=0,sec=0;
+        char tow[500]={0};
+        f=fopen("metro.txt","r");
+        leaveLines(f);
+        createLine(green,f,21);
+        leaveLines(f);
+        leaveLines(f);
+        createLine(yellow,f,17);
+        leaveLines(f);
+        leaveLines(f);
+        createLine(blue,f,27);
+        leaveLines(f);
+        leaveLines(f);
+        createLine(silver,f,28);
+        leaveLines(f);
+        leaveLines(f);
+        createLine(orange,f,26);
+        leaveLines(f);
+        leaveLines(f);
+        createLine(red,f,27);
+        fclose(f);
+
+        printf("\nEnter source:");
+        gets(src);
+        printf("\nEnter destination:");
+        gets(dst);
+
+        sst=searchSrc(src,green,yellow,blue,silver,orange,red,&srcLine,&si);
+
+        if(srcLine==1)
+        {
+                dstn=searchDst(dst,green,&flag,21,&di);
+                if(flag==1)
+                {
+                        totTime=getTime(di,si,green,21);
+                        min=totTime/60;
+                        sec=totTime%60;
+                        if(di>si)
+                        {
+                                strcpy(tow,green[20].stationName);
+                                stcount=di-si;
+                        }
+                        else
+                        {
+                                strcpy(tow,green[0].stationName);
+                                stcount=si-di;
+                        }
+                        writeToFile(src,"green",tow,stcount,min,sec,dst,argv[1]);
+                }
+                else
+                {
+                        dstn=searchSrc(dst,green,yellow,blue,silver,orange,red,&dstLine,&di);
+                        findIntersection(green,yellow,blue,silver,orange,red,dstLine,green,21,si,di,argv[1],src,dst,"green");
+                }
+
+        }
+        else if(srcLine==2)
+        {
+                dstn=searchDst(dst,yellow,&flag,17,&di);
+                if(flag==1)
+                {
+                        totTime=getTime(di,si,yellow,17);
+                        min=totTime/60;
+                        sec=totTime%60;
+                        if(di>si)
+                        {
+                                strcpy(tow,yellow[16].stationName);
+                                stcount=di-si;
+                        }
+                        else
+                        {
+                                strcpy(tow,yellow[0].stationName);
+                                stcount=si-di;
+                        }
+                        writeToFile(src,"yellow",tow,stcount,min,sec,dst,argv[1]);
+                }
+                else
+                {
+                        dstn=searchSrc(dst,green,yellow,blue,silver,orange,red,&dstLine,&di);
+
+                        findIntersection(green,yellow,blue,silver,orange,red,dstLine,yellow,17,si,di,argv[1],src,dst,"yellow");
+                }
+
+        }
+        else if(srcLine==3)
+        {
+                dstn=searchDst(dst,blue,&flag,27,&di);
+                if(flag==1)
+                {
+                        totTime=getTime(di,si,blue,27);
+                        min=totTime/60;
+                        sec=totTime%60;
+                        if(di>si)
+                        {
+                                strcpy(tow,blue[26].stationName);
+                                stcount=di-si;
+                        }
+                        else
+                        {
+                                strcpy(tow,blue[0].stationName);
+                                stcount=si-di;
+                        }
+                        writeToFile(src,"blue",tow,stcount,min,sec,dst,argv[1]);
+
+                }
+                else
+                {
+                        dstn=searchSrc(dst,green,yellow,blue,silver,orange,red,&dstLine,&di);
+
+                        findIntersection(green,yellow,blue,silver,orange,red,dstLine,blue,27,si,di,argv[1],src,dst,"blue");
+                }
+
+        }
+        else if(srcLine==4)
+        {
+                dstn=searchDst(dst,silver,&flag,28,&di);
+                if(flag==1)
+                {
+                        totTime=getTime(di,si,silver,28);
+                        min=totTime/60;
+                        sec=totTime%60;
+                        if(di>si)
+                        {
+                                strcpy(tow,silver[27].stationName);
+                                stcount=di-si;
+                        }
+                        else
+                        {
+                                strcpy(tow,silver[0].stationName);
+                                stcount=si-di;
+                        }
+                        writeToFile(src,"silver",tow,stcount,min,sec,dst,argv[1]);
+
+                }
+                else
+                {
+                        dstn=searchSrc(dst,green,yellow,blue,silver,orange,red,&dstLine,&di);
+
+                        findIntersection(green,yellow,blue,silver,orange,red,dstLine,silver,28,si,di,argv[1],src,dst,"silver");
+                }
+
+        }
+        else if(srcLine==5)
+        {
+                dstn=searchDst(dst,orange,&flag,26,&di);
+                if(flag==1)
+                {
+                        totTime=getTime(di,si,orange,26);
+                        min=totTime/60;
+                        sec=totTime%60;
+                        if(di>si)
+                        {
+                                strcpy(tow,orange[25].stationName);
+                                stcount=di-si;
+                        }
+                        else
+                        {
+                                strcpy(tow,orange[0].stationName);
+                                stcount=si-di;
+                        }
+                        writeToFile(src,"orange",tow,stcount,min,sec,dst,argv[1]);
+                }
+                else
+                {
+                        dstn=searchSrc(dst,green,yellow,blue,silver,orange,red,&dstLine,&di);
+
+                        findIntersection(green,yellow,blue,silver,orange,red,dstLine,orange,26,si,di,argv[1],src,dst,"orange");
+                }
+
+        }
+        else
+        {
+                dstn=searchDst(dst,red,&flag,27,&di);
+                if(flag==1)
+                {
+                        totTime=getTime(di,si,red,27);
+                        min=totTime/60;
+                        sec=totTime%60;
+                        if(di>si)
+                        {
+                                strcpy(tow,red[26].stationName);
+                                stcount=di-si;
+                        }
+                        else
+                        {
+                                strcpy(tow,red[0].stationName);
+                                stcount=si-di;
+                        }
+                        writeToFile(src,"red",tow,stcount,min,sec,dst,argv[1]);
+                }
+                else
+                {
+                        dstn=searchSrc(dst,green,yellow,blue,silver,orange,red,&dstLine,&di);
+
+                        findIntersection(green,yellow,blue,silver,orange,red,dstLine,red,27,si,di,argv[1],src,dst,"red");
+                }
+        }
+}
+
+

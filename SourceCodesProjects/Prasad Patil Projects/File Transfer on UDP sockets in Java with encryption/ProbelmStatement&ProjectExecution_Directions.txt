@@ -1,0 +1,47 @@
+The prime goal of the project is to design a distributed networking JAVA application for 
+effective communication between a client and server. The application should guarantee reliable 
+data transfer between the two communicating parties. The application should employ JAVA’s UDP socket 
+and provide reliable data transfer functionality on top of UDP’s unreliable communication services by 
+implementing Integrity Checksum. This Integrity Checksum will authenticate and authorize communication 
+access for both the client and server. The protocol will use integrity check, timeout and retransmission, 
+which are required for successful communication between the client and server.
+The server should serve the following three text files to the client:  
+•	directors_message.txt
+•	program_overview.txt
+•	scholarly_paper.txt
+The messages exchanged between the client and server should be text-oriented and consist of human 
+readable character sequences. To calculate the integrity check value at client, the character sequence
+should be converted to a sequence of 16-bit words. Each 16-bit word should contain ASCII codes for two 
+consecutive message characters. The final calculated 16-bit word is the checksum value. Similarly, the 
+same procedure should be carried out at the server and the integrity checksum value should be recalculated. 
+Then, the computed integrity checksum value and the received integrity checksum value should be compared. 
+If they don’t match, then there are some errors in the received message that is, integrity check has failed.
+
+==================================================================================
+Opening java files in eclipse:
+
+- Create a new java project in eclipse.
+- Right click on the 'src' folder of the pakcage created.
+- Click on 'Import', select 'general', select 'file system'
+- Browse the folder where java files are stored.
+- Select the java files to be imported
+- Click on finish.
+- Delete packages defined in the code if there are any. Let the code run in default package of project created.
+- Execute.
+
+===================================================================================
+
+Code execution
+
+- To set the path where the text files are stored in the local system, 
+- Open the Server.java source code. 
+- In the method getFIleContent( ) of Server class set the path in the field named 'pathl'.
+
+===================================================================================
+
+Special characters
+
+- The code assumes that there are no apostrophe ( ' ) or double quotes ( " " ) in the text files whose content is to be transmitted.
+- Care should be taken to remove all the apostrophe and double quotes from the text files.
+
+===================================================================================

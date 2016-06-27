@@ -1,0 +1,520 @@
+/*
+#######################################################################################################
+Calculator for infinitely long numbers:::
+
+Given two really large inregers, A and B, of unknown length (Could be  hundreds of digits)
+To compute A+B, A-B, A*B. However we can perform +,- or * for very small numbers which can be stored as
+some data types directly, in this project we perform these operations with infinitely long numbers.
+The numbers are stored in text files. names of the text files are entered as command line arguments.
+#######################################################################################################
+*/
+#include<stdio.h>
+#include<stdlib.h>
+#include<math.h>
+
+#define new(x) (x*)malloc(sizeof(x))
+
+//Some global variables.
+int addCount=0;//Addition block counter.
+int subCount=0;//Subtraction block counter.
+int mulCount=0;//Multiplication block counter.
+FILE *op;//Pointer to the output file.
+
+//Define node structure.
+typedef struct node
+{
+        int data;
+        struct node *next;
+}node;
+
+//Function to create a single node.
+node * make_node(int d)
+{
+        node *temp;
+        temp=new(node);
+        if(temp!=NULL)
+        {
+                temp->data=d;
+                temp->next=NULL;
+        }
+        return temp;
+}
+
+//Function to make linked list for each operand. And return head of it.
+node * makeLinkedList(char a[],char b[])
+{
+        FILE *f1,*f2;
+        int count=0,D=0,g=0,i=0,h=0,onc=1,fvalue=0,jh=0;
+        char c;
+
+        //Count number of digits in the first number.
+        f1=fopen(a,"r");
+        while(1)
+        {
+                c=fgetc(f1);
+                if(c==EOF)
+                        break;
+                count++;
+        }
+        count--;
+        printf(" %d",count);
+        fclose(f1);
+
+        //Find number of digits in first node of first number.
+        g=atoi(b);
+        D=count%g;
+        if(D==0)
+        {
+                D=g;
+        }
+
+        //Create first block
+        f2=fopen(a,"r");
+        char fblock[D],block[g];
+        for(i=0;i<D;i++)
+        {
+                fblock[i]=fgetc(f2);
+        }
+        node *f;
+        fvalue=atoi(fblock);
+        f=make_node(fvalue);
+
+        /*Create rest of the linked list with each node
+         containing number of digits equal to block size 'k'.*/
+        node *temp1,*temp2;
+        temp1=f;
+        i=0;
+        g--;
+        while(1)
+        {
+                c=fgetc(f2);
+                if(c==EOF || onc==count)
+                {
+                        break;
+                }
+                block[i]=c;
+                if(i==g)
+                {
+                        i=-1;
+                        fvalue=atoi(block);
+                        temp2=make_node(fvalue);
+                        temp2->next=temp1;
+                        temp1=temp2;
+                }
+                i++;
+                onc++;
+        }
+        fclose(f2);
+        return temp1;
+}
+
+//Funtion to display linked list contents.
+void displayList(node *p)
+{
+        int i=1;
+        while(p!=NULL)
+        {
+                printf("%d ",p->data);
+                p=p->next;
+                i++;
+        }
+}
+
+//Funtion to add two operands.
+node * add(node *p1, node *p2,char b[])
+{
+        node *res,*temp;
+        int carry=0,k=0,x=0,y=0,t1=0,t2=0;
+        k=atoi(b);
+        res=make_node(x);
+        while(p1!=NULL || p2!=NULL || carry!=0)
+        {
+                /*Make sure if any of the operands reaches its
+                 limit in linked list then zero is added to rest of the second operand.*/
+
+                if(p1==NULL)
+                        t1=0;
+                else
+                {
+                        t1=p1->data;
+                        p1=p1->next;
+                }
+                if(p2==NULL)
+                        t2=0;
+                else
+                {
+                        t2=p2->data;
+                        p2=p2->next;
+                }
+
+                x=t1+t2;
+                x=x+carry;
+
+                //Increment operations block count only if both the operands are non zero while adding.
+                if(t1!=0 && t2!=0)
+                        addCount++;
+
+                //Increment operations block count only if carry added is non zero.
+                if(carry!=0 && (t1!=0 || t2!=0))
+                        addCount++;
+
+                //Generate carry
+                y=(int)pow(10,k);
+                if(x>=y)
+                {
+                        carry=x/y;
+                        x=x%y;
+                }
+                //Set carry to zero if no carry is generated.
+                else
+                        carry=0;
+
+                //Move down to next blocks to store the results.
+                temp=make_node(x);
+                temp->next=res->next;
+                res->next=temp;
+        }
+        return temp;
+}
+
+//Function to write list to the file.
+void writeList(node *p,char b[])
+{
+        int k=0;
+        k=atoi(b);
+        while(p!=NULL)
+        {
+                int t=0,count=0;
+                t=p->data;
+                //Count number of digits in a single block.
+                while(t!=0)
+                {
+                        t/=10;
+                        ++count;
+                }
+                /*Check if number of digits in a single block are
+                less than block size, if so write 0 first to the file.*/
+                if(count==0)
+                        count=1;
+                if(count<k && k>1)
+                {
+                        int h=0;
+                        /*Number of zeros to be written in file is
+                        equal to difference between count and block size.*/
+                        for(h=0;h<(k-count);h++)
+                        {
+                                fprintf(op,"%d",0);
+                        }
+                }
+                fprintf(op,"%d",p->data);
+                p=p->next;
+        }
+}
+
+//Funtion to write the result into the file.
+void writeToFile(char opFile[],char blkSize[],node *addPtr,node *subPtr,node *mulPtr)
+{
+        op=fopen(opFile,"w");
+        if(op==NULL)
+        {
+                printf("\nError opening file");
+        }
+        fprintf(op,"%s","Sum: ");
+        writeList(addPtr,blkSize);
+        fprintf(op,"%s","\nNumber of block operations:");
+        fprintf(op,"%d",addCount);
+        fprintf(op,"%s","\nDifference: ");
+        writeList(subPtr,blkSize);
+        fprintf(op,"%s","\nNumber of block operations:");
+        fprintf(op,"%d",subCount);
+        fprintf(op,"%s","\nMultiplication:");
+        writeList(mulPtr,blkSize);
+        fprintf(op,"%s","\nNumber of block operations:");
+        fprintf(op,"%d",mulCount);
+        fclose(op);
+}
+
+/*Find the larger operand out of two infinitely long operands.
+This could be useful while substration is carried out.
+The conditions included here also take care if any of the
+operands have leading zeros.*/
+int findLargerOp(char f1[],char f2[])
+{
+        FILE *f1p,*f2p;
+        int c1=0,c2=0;
+        char ch1,ch2;
+        f1p=fopen(f1,"r");
+        f2p=fopen(f2,"r");
+
+        //Count number of digits in first operand.
+        while(1)
+        {
+                if(fgetc(f1p)!='0')
+                {
+                        while(fgetc(f1p)!=EOF)
+                                c1++;
+                        c1++;
+                        break;
+                }
+        }
+
+        //Count number of digits in second operand.
+        while(1)
+        {
+                if(fgetc(f2p)!='0')
+                {
+                        while(fgetc(f2p)!=EOF)
+                                c2++;
+                        c2++;
+                        break;
+                }
+        }
+
+        //Return 1 if first operand has more nnumber of digits than second one.
+        if(c1>c2)
+                return 1;
+        //Return 2 if second operand has more number of digits than first one.
+        else if(c2>c1)
+                return 2;
+        /*If both the operands have same number of digits,
+        campare each digits one by one.*/
+        else
+        {
+                rewind(f1p);
+                rewind(f2p);
+                while(ch1==EOF || ch2==EOF)
+                {
+                        ch1=fgetc(f1p);
+                        ch2=fgetc(f2p);
+                        ch1=ch1-'0';
+                        ch2=ch2-'0';
+                        if(ch1>ch2)
+                                return 1;
+                        if(ch2>ch1)
+                                return 2;
+                }
+        }
+
+        //Return 0 if both the operands are same.
+        return 0;
+
+}
+
+//Function to perform subtraction.
+node * subtract(node *p1,node *p2,char b[])
+{
+        node *res,*temp;
+        int bor=0,k=0,t1=0,t2=0,x=0;
+        k=atoi(b);
+        res=make_node(x);
+        while(p1!=NULL || p2!=NULL)
+        {
+                /*Make sure if any of the operands reaches its
+                 limit in linked list then zero is added to rest of the second operand.*/
+
+                if(p1==NULL)
+                        t1=0;
+                else
+                {
+                        t1=p1->data;
+                        p1=p1->next;
+                }
+                if(p2==NULL)
+                        t2=0;
+                else
+                {
+                        t2=p2->data;
+                        p2=p2->next;
+                }
+
+                t2=t2+bor;
+
+                //Borrow 10^k if second operand is smaller than first one.
+                if(t1<t2)
+                {
+                        int h1;
+                        h1=pow(10,k);
+                        t1=t1+h1;
+                        bor=1;
+                }
+                else
+                {
+                        bor=0;
+                }
+
+                x=t1-t2;
+
+                //Increment operations block count only if the second operand is non zero.
+                if(t2!=0)
+                        subCount++;
+
+                //Increment operations block count only if borrow added to second operand.
+                if(bor!=0)
+                        subCount++;
+
+                //Move to the next block of to store the result.
+                temp=make_node(x);
+                temp->next=res->next;
+                res->next=temp;
+        }
+        return temp;
+}
+
+//Function to reverse a linked list.
+node * reverse(node *p)
+{
+        if(p==NULL)
+        {
+                return NULL;
+        }
+        int n=0,i=0;
+        node *bkp,*res,*temp;
+        bkp=p;
+        while(p!=NULL)
+        {
+                n++;
+                p=p->next;
+        }
+        int a[n];
+        p=bkp;
+        while(p!=NULL)
+        {
+                a[i]=p->data;
+                p=p->next;
+                i++;
+        }
+        i=n-1;
+        res=make_node(a[i]);
+        bkp=res;
+        for(i=n-2;i>=0;i--)
+        {
+                temp=make_node(a[i]);
+                res->next=temp;
+                res=temp;
+        }
+        return bkp;
+}
+
+//Funtion to multiply two operands.
+node * multiply(node *p1,node *p2,char b[])
+{
+        node *temp,*res,*f,*f2,*mul;
+        int t1=0,t2=0,y=0,x=0,j=0,k=0,carry1=0,carry2=0,pad=0,save=0;
+
+        k=atoi(b);
+        y=(int)pow(10,k);
+        save=addCount;
+
+        f2=p1;
+        mul=make_node(0);
+
+        while(p2!=NULL || carry1!=0)
+        {
+                if(p2==NULL)
+                        t2=0;
+                else
+                {
+                        t2=p2->data;
+                }
+
+                res=make_node(x);
+                f=res;
+
+                for(j=0;j<pad;j++)
+                {
+                        temp=make_node(0);
+                        res->next=temp;
+                        res=res->next;
+                }
+                while(p1!=NULL || carry1!=0)
+                {
+                        if(p1==NULL)
+                                t1=0;
+                        else
+                                t1=p1->data;
+
+                        x=t1*t2;
+                        if((t1!=1 && t2!=1)||(t1==0 || t2==0))
+                        {
+                                mulCount++;
+                        }
+                        if(carry1!=0)
+                        {
+                                mulCount++;
+                        }
+
+                        x=x+carry1;
+
+                        if(x>=y)
+                        {
+                                carry1=x/y;
+                                x=x%y;
+                        }
+                        else
+                                carry1=0;
+
+                        temp=make_node(x);
+                        res->next=temp;
+                        res=res->next;
+                        if(p1!=NULL)
+                                p1=p1->next;
+                }
+                p1=f2;
+                f=f->next;
+                mul=reverse(mul);
+                mul=add(mul,f,b);
+                free(f);
+                free(res);
+                x=0;
+
+                pad++;
+
+                if(p2!=NULL)
+                        p2=p2->next;
+        }
+
+        //Update block counters.
+        mulCount=mulCount+(addCount-save);
+        addCount=save;
+        return mul;
+
+}
+
+//Main begins.
+main(int argc, char *argv[])
+{
+        if(argc!=5)
+        {
+                printf("\nInvalid command line arguments");
+        }
+
+        int ind=0;
+        node *op1,*op2,*resAdd,*resSub,*resMul,*rev;
+
+        //Make liked list for operator 1.
+        op1=makeLinkedList(argv[2],argv[1]);
+
+        //Make linked list fpr operator 2.
+        op2=makeLinkedList(argv[3],argv[1]);
+
+        //Add two operands.
+        resAdd=add(op1,op2,argv[1]);
+
+        /*Find larger operand out of two given infinitely long numbers.
+        This will be used during substraction*/
+        ind=findLargerOp(argv[2],argv[3]);
+
+        //Perform subtraction based on which operand is larger.
+        if(ind==1)
+                resSub=subtract(op1,op2,argv[1]);
+        else
+                resSub=subtract(op2,op1,argv[1]);
+
+        //Perform multiplication.
+        resMul=multiply(op1,op2,argv[1]);
+
+        printf("\nResult written into file:%s\n",argv[4]);
+
+        //Write the result to output file.
+        writeToFile(argv[4],argv[1],resAdd,resSub,resMul);
+}
